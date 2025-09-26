@@ -48,6 +48,7 @@
 			font-size: 1.5rem;
 			font-weight: 800;
 			color: var(--text-primary);
+			text-decoration: none;
 		}
 
 		.search-bar {
@@ -438,7 +439,7 @@
 
 	<!-- Header -->
 	<div class="header">
-		<div class="logo">OKR | FOCUS</div>
+		<a href="{{ route('dashboard') }}" class="logo">OKR | FOCUS</a>
 		
 		<div class="search-bar">
 			<svg class="icon" fill="currentColor" viewBox="0 0 20 20">
@@ -482,7 +483,6 @@
 			@else
 				<div class="auth-buttons">
 					<a href="{{ route('auth.login') }}" class="btn-login">Đăng nhập</a>
-					<a href="{{ route('auth.signup') }}" class="btn-register">Đăng ký</a>
 				</div>
 			@endauth
 		</div>
@@ -644,13 +644,13 @@
 		</div>
 
 		@if (session('success'))
-			<div style="position: fixed; top: 20px; right: 20px; background: var(--accent-green); color: white; padding: 1rem; border-radius: 8px; z-index: 1000;">
+			<div id="success-toast" style="position: fixed; top: 20px; right: 20px; background: var(--accent-green); color: white; padding: 1rem; border-radius: 8px; z-index: 1000;">
 				{{ session('success') }}
 			</div>
 		@endif
 
 		@if (session('error'))
-			<div style="position: fixed; top: 20px; right: 20px; background: #ef4444; color: white; padding: 1rem; border-radius: 8px; z-index: 1000;">
+			<div id="error-toast" style="position: fixed; top: 20px; right: 20px; background: #ef4444; color: white; padding: 1rem; border-radius: 8px; z-index: 1000;">
 				{{ session('error') }}
 			</div>
 		@endif
@@ -662,12 +662,16 @@
 			<p style="font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 3rem; max-width: 600px; margin-left: auto; margin-right: auto;">
 				Quản lý mục tiêu và kết quả then chốt một cách hiệu quả. Đăng nhập để bắt đầu sử dụng dashboard.
 			</p>
-			<div class="auth-buttons" style="justify-content: center;">
-				<a href="{{ route('auth.login') }}" class="btn-login">Đăng nhập</a>
-				<a href="{{ route('auth.signup') }}" class="btn-register">Đăng ký</a>
-			</div>
 		</div>
 	@endauth
 
 </body>
+<script>
+    setTimeout(function() {
+        var successToast = document.getElementById('success-toast');
+        if (successToast) successToast.style.display = 'none';
+        var errorToast = document.getElementById('error-toast');
+        if (errorToast) errorToast.style.display = 'none';
+    }, 2000); // 2 giây
+</script>
 </html>

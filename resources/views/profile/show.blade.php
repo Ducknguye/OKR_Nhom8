@@ -7,51 +7,211 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
+<style>
+        :root {
+            /* Light theme colors - đồng bộ với dashboard */
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --text-muted: #9ca3af;
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --accent-orange: #f59e0b;
+            --border: #e5e7eb;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            width: 300px;
+        }
+
+        .search-bar input {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            outline: none;
+            width: 100%;
+            margin-left: 0.5rem;
+        }
+
+        .search-bar input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .icon {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            color: var(--text-secondary);
+        }
+
+        .icon:hover {
+            opacity: 1;
+            color: var(--accent-blue);
+        }
+
+        /* Profile dropdown */
+        .profile {
+            position: relative;
+        }
+
+        .profile summary {
+            list-style: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .profile summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .menu {
+            position: absolute;
+            right: 0;
+            top: 48px;
+            min-width: 200px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            padding: 1rem;
+            z-index: 50;
+        }
+
+        .menu .user-info {
+            margin-bottom: 1rem;
+        }
+
+        .menu .name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .menu .email {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .menu .line {
+            height: 1px;
+            background: var(--border);
+            margin: 0.75rem 0;
+        }
+
+        .menu a {
+            display: block;
+            padding: 0.5rem 0;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .menu a:hover {
+            color: var(--accent-blue);
+        }
+    </style>
 <body class="bg-gray-50">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <a href="{{ route('dashboard') }}" class="flex items-center">
-                        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-chart-line text-white text-sm"></i>
-                        </div>
-                        <span class="ml-2 text-xl font-bold text-gray-900">OKR System</span>
-                    </a>
-                </div>
-                
-                <div class="flex items-center space-x-4">
-                    <!-- User Dropdown -->
-                    <div class="relative">
-                        <button class="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none" onclick="toggleDropdown()">
-                            @if($user->avatar_url)
-                                <img src="{{ $user->avatar_url }}" alt="Avatar" class="w-8 h-8 rounded-full">
-                            @else
-                                <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                                    <span class="text-white text-sm font-medium">{{ substr($user->full_name ?? $user->email, 0, 1) }}</span>
-                                </div>
-                            @endif
-                            <i class="fas fa-chevron-down text-xs"></i>
-                        </button>
-                        
-                        <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                            <div class="px-4 py-2 border-b">
-                                <p class="text-sm font-medium text-gray-900">{{ $user->full_name ?? 'User' }}</p>
-                                <p class="text-sm text-gray-500">{{ $user->email }}</p>
-                            </div>
-                            <a href="{{ route('profile.show') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-user mr-2"></i>Hồ sơ / Trang của tôi
-                            </a>
-                            <a href="{{ route('auth.logout') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-sign-out-alt mr-2"></i>Đăng xuất
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Header -->
+    <div class="header">
+		<a href="{{ route('dashboard') }}" class="logo">OKR | FOCUS</a>        
+        <div class="search-bar">
+            <svg class="icon" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+            </svg>
+            <input type="text" placeholder="Search">
         </div>
-    </nav>
+
+        <div class="header-right">
+            @auth
+                @php
+                    $avatar = auth()->user()->avatar_url ?: 'https://www.gravatar.com/avatar/'.md5(strtolower(trim(auth()->user()->email))).'?s=200&d=identicon';
+                @endphp
+
+                <svg class="icon" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path>
+                </svg>
+
+                <svg class="icon" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path>
+                </svg>
+
+                <details class="profile">
+                    <summary>
+                        <img class="avatar" src="{{ $avatar }}" alt="avatar">
+                        <span>{{ auth()->user()->full_name ?? 'User' }}</span>
+                    </summary>
+                    <div class="menu">
+                        <div class="user-info">
+                            <img class="avatar" src="{{ $avatar }}" alt="avatar">
+                            <div>
+                                <div class="name">{{ auth()->user()->full_name ?? 'Chưa cập nhật' }}</div>
+                                <div class="email">{{ auth()->user()->email }}</div>
+                            </div>
+                        </div>
+                        <div class="line"></div>
+                        <a href="/profile" class="dropdown-item">Hồ sơ / Trang của tôi</a>
+                        <a href="{{ route('auth.logout') }}" class="dropdown-item">Đăng xuất</a>
+                    </div>
+                </details>
+            @endauth
+        </div>
+    </div>
 
     <!-- Main Content -->
     <div class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">

@@ -109,8 +109,6 @@ class AuthController extends Controller
 
         $sub = $userData['sub'] ?? null;
         $email = $userData['email'] ?? null;
-        $name = $userData['name'] ?? null;
-        $picture = $userData['picture'] ?? null;
 
         if (!$sub || !$email) {
             return redirect('/dashboard')->with('error', 'Không thể lấy thông tin người dùng từ ID token');
@@ -126,13 +124,6 @@ class AuthController extends Controller
             [
                 'sub' => $sub,
                 'email' => $email,
-                'full_name' => $name,
-                'phone' => null,
-                'avatar_url' => $picture, // Lưu ảnh đại diện từ Google
-                'google_id' => $provider === 'Google' ? $sub : null, // Lưu Google ID nếu đăng nhập từ Google
-                'job_title' => null,
-                'department_id' => null,
-                'role_id' => null,
             ]
         );
 

@@ -56,6 +56,7 @@
 			align-items: center;
 			justify-content: center;
 			margin-bottom: 2rem;
+			text-decoration: none;
 		}
 
 		.logo::before {
@@ -320,10 +321,6 @@
 				</svg>
 				Đăng nhập với Google
 			</a>
-
-			<div class="register-link">
-				Chưa có tài khoản? <a href="{{ route('auth.register') }}">Đăng ký ngay</a>
-			</div>
 		</div>
 
 		<div class="right-panel">
