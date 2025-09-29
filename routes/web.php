@@ -35,3 +35,9 @@ Route::get('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout
 // Profile routes - tạm thời bỏ middleware để test
 Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
 Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/change-password', [AuthController::class, 'showChangePasswordForm'])->name('change.password.form');
+    Route::post('/change-password', [AuthController::class, 'changePassword'])->name('change.password');
+});
+

@@ -8,9 +8,123 @@ use Illuminate\Support\Facades\Http;
 use App\Models\User;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use Illuminate\Support\Facades\Session;
+use Aws\CognitoIdentityProvider\CognitoIdentityProviderClient;
+use Aws\Exception\AwsException;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
+    protected $cognitoClient;
+
+    public function __construct()
+    {
+        // Khởi tạo Cognito client
+        $this->cognitoClient = new CognitoIdentityProviderClient([
+            'region' => env('AWS_DEFAULT_REGION', 'ap-southeast-2'),
+            'version' => 'latest',
+            'credentials' => [
+                'key' => env('AWS_ACCESS_KEY_ID'),
+                'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            ],
+        ]);
+    }
+
+    // Hiện form đổi mật khẩu
+    public function showChangePasswordForm()
+    {
+        return view('auth.change-password');
+    }
+
+    // Xử lý đổi mật khẩu
+    public function changePassword(Request $request)
+    {
+        // Validate input
+        $validator = Validator::make($request->all(), [
+            'old_password' => 'required|string|min:8', // Điều chỉnh theo policy của Cognito User Pool
+            'new_password' => 'required|string|min:8|confirmed',
+            'new_password_confirmation' => 'required|string|same:new_password',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('Validation failed for change password', [
+                'errors' => $validator->errors()->toArray(),
+                'user_id' => Auth::id()
+            ]);
+            return back()->withErrors($validator)->withInput();
+        }
+
+        // Lấy access token từ session
+        $accessToken = Session::get('cognito_access_token');
+        Log::info('Retrieved access token from session', [
+            'has_access_token' => !empty($accessToken),
+            'user_id' => Auth::id()
+        ]);
+
+        if (!$accessToken) {
+            Log::error('No access token found in session', [
+                'user_id' => Auth::id(),
+                'session_keys' => array_keys(Session::all())
+            ]);
+            return redirect()->route('auth.login')->with('error', 'Bạn cần đăng nhập để đổi mật khẩu.');
+        }
+
+        try {
+            Log::info('Calling Cognito changePassword API', [
+                'user_id' => Auth::id(),
+                'access_token_length' => strlen($accessToken)
+            ]);
+            // Gọi API đổi mật khẩu của Cognito
+            $result = $this->cognitoClient->changePassword([
+                'AccessToken' => $accessToken,
+                'PreviousPassword' => $request->old_password,
+                'ProposedPassword' => $request->new_password,
+            ]);
+
+            Log::info('Password changed successfully', [
+                'user_id' => Auth::id(),
+                'cognito_response' => $result->toArray()
+            ]);
+
+            // Xóa token cũ sau khi đổi mật khẩu
+            Session::forget('cognito_access_token');
+            Session::forget('cognito_refresh_token');
+            Session::forget('cognito_id_token');
+
+            Log::info('Cleared session tokens after password change', [
+                'user_id' => Auth::id(),
+                'remaining_session_keys' => array_keys(Session::all())
+            ]);
+
+            // Đăng xuất người dùng để yêu cầu đăng nhập lại
+            Auth::logout();
+
+            Log::info('User logged out after password change', [
+                'user_id' => Auth::id()
+            ]);
+            Session::forget('cognito_access_token');
+            Session::forget('cognito_refresh_token');
+            Session::forget('cognito_id_token');
+            return redirect()->route('auth.login')->with('success', 'Đổi mật khẩu thành công! Vui lòng đăng nhập lại.');
+
+        } catch (AwsException $e) {
+            $errorMessage = $e->getAwsErrorMessage();
+            \Log::error("Change password failed: " . $errorMessage);
+
+            if (strpos($errorMessage, 'NotAuthorizedException') !== false || strpos($errorMessage, 'InvalidAccessTokenException') !== false) {
+                return redirect()->route('auth.login')->with('error', 'Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.');
+            }
+            if (strpos($errorMessage, 'Incorrect password') !== false) {
+                return back()->withErrors(['old_password' => 'Mật khẩu cũ không đúng.']);
+            }
+            return back()->withErrors(['error' => 'Lỗi: ' . $errorMessage]);
+        } catch (\Exception $e) {
+            \Log::error("Unexpected error: " . $e->getMessage());
+            return back()->withErrors(['error' => 'Có lỗi xảy ra: ' . $e->getMessage()]);
+        }
+    }
+
     // Redirect đến Hosted UI của Cognito
     public function redirectToCognito()
     {
@@ -18,7 +132,7 @@ class AuthController extends Controller
         $url = $base.'/login?'.http_build_query([
             'client_id'     => config('services.cognito.client_id', '3ar8acocnqav49qof9qetdj2dj'),
             'response_type' => 'code',
-            'scope'         => 'email openid phone',
+            'scope'         => 'email openid phone aws.cognito.signin.user.admin',
             'redirect_uri'  => env('COGNITO_REDIRECT_URI', 'http://localhost:8000/auth/callback'),
         ]);
         return redirect($url);
@@ -31,7 +145,7 @@ class AuthController extends Controller
         $url = $base.'/login?'.http_build_query([
             'client_id'     => config('services.cognito.client_id', '3ar8acocnqav49qof9qetdj2dj'),
             'response_type' => 'code',
-            'scope'         => 'email openid phone',
+            'scope'         => 'email openid phone aws.cognito.signin.user.admin',
             'redirect_uri'  => env('COGNITO_REDIRECT_URI', 'http://localhost:8000/auth/callback'),
         ]);
 
@@ -47,7 +161,7 @@ class AuthController extends Controller
         $url = $base.'/login?'.http_build_query([
             'client_id'     => config('services.cognito.client_id', '3ar8acocnqav49qof9qetdj2dj'),
             'response_type' => 'code',
-            'scope'         => 'email openid phone',
+            'scope'         => 'email openid phone aws.cognito.signin.user.admin',
             'redirect_uri'  => env('COGNITO_REDIRECT_URI', 'http://localhost:8000/auth/callback'),
         ]);
 
@@ -88,6 +202,11 @@ class AuthController extends Controller
 
         $tokens = $response->json();
         \Log::info("Tokens received: " . json_encode($tokens));
+
+        // ✅ Lưu access_token, refresh_token, id_token vào session (THÊM MỚI)
+        Session::put('cognito_access_token', $tokens['access_token'] ?? null);
+        Session::put('cognito_refresh_token', $tokens['refresh_token'] ?? null);
+        Session::put('cognito_id_token', $tokens['id_token'] ?? null);
 
         // Lấy ID token (chứa thông tin người dùng)
         $idToken = $tokens['id_token'] ?? null;
@@ -182,6 +301,11 @@ class AuthController extends Controller
     public function logout()
     {
         Auth::logout();
+
+        // ✅ Xóa token khỏi session (THÊM MỚI)
+        Session::forget('cognito_access_token');
+        Session::forget('cognito_refresh_token');
+        Session::forget('cognito_id_token');
         return redirect('/dashboard')->with('success', 'Đăng xuất thành công!');
     }
 }
